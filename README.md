@@ -28,13 +28,13 @@ It builds a **Standalone Windows64** player, generates the Steamworks `app_build
 3. Paste:
 
    ```
-   https://github.com/wazanggames/steam-build-pipeline.git
+   https://github.com/wazzapsenk/steam-build-pipeline.git
    ```
 
 To pin a specific version, append a tag:
 
 ```
-https://github.com/wazanggames/steam-build-pipeline.git#v1.0.0
+https://github.com/wazzapsenk/steam-build-pipeline.git#v1.0.0
 ```
 
 ### Or via `manifest.json`
@@ -44,7 +44,7 @@ Add to `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.wazanggames.steam-build-pipeline": "https://github.com/wazanggames/steam-build-pipeline.git#v1.0.0"
+    "com.wazanggames.steam-build-pipeline": "https://github.com/wazzapsenk/steam-build-pipeline.git#v1.0.0"
   }
 }
 ```
