@@ -1,0 +1,13 @@
+# Unity-generated noise (not part of the package source)
+[Tt]emp/
+[Ll]ibrary/
+[Oo]bj/
+*.csproj
+*.sln
+*.user
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vs/
+.idea/

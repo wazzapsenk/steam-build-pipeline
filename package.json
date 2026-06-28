@@ -1,0 +1,23 @@
+{
+  "name": "com.wazanggames.steam-build-pipeline",
+  "version": "1.0.0",
+  "displayName": "Steam Build Pipeline",
+  "description": "One-click Unity → steamcmd build & upload pipeline. Builds a Standalone Windows64 player, generates the Steamworks app/depot VDF scripts, and uploads via steamcmd — straight from an Editor window. Supports multiple environments (Demo / Playtest / Prod) each with their own AppId, depots and whitelisted branches.",
+  "unity": "2021.3",
+  "keywords": [
+    "steam",
+    "steamworks",
+    "steamcmd",
+    "build",
+    "pipeline",
+    "ci",
+    "deployment",
+    "editor-tool"
+  ],
+  "author": {
+    "name": "Wazang Games"
+  },
+  "license": "MIT",
+  "documentationUrl": "https://github.com/wazanggames/steam-build-pipeline#readme",
+  "changelogUrl": "https://github.com/wazanggames/steam-build-pipeline/blob/main/CHANGELOG.md"
+}
