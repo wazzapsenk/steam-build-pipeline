@@ -10,8 +10,9 @@ namespace WazangGames.SteamBuildPipeline
     /// <summary>
     /// Persisted settings for the Steam build pipeline. Holds the steamcmd location,
     /// the upload account, and per-environment (Demo/Playtest/Prod) AppId + Depot
-    /// configuration. One asset lives under Assets/Editor/SteamBuild/ in the consuming
-    /// project (NOT in the package — AppIds are project specific).
+    /// configuration. The asset lives in the consuming project (NOT in the package —
+    /// AppIds are project specific); on first run it is created in whatever folder is
+    /// selected in the Project window, or under Assets/ if nothing is selected.
     ///
     /// Keep this asset out of public branches if you fill in steamUsername with a
     /// shared account — Steamworks credentials in version control are a footgun.
@@ -81,14 +82,41 @@ namespace WazangGames.SteamBuildPipeline
                 return AssetDatabase.LoadAssetAtPath<SteamBuildConfig>(path);
             }
 
-            const string folder = "Assets/Editor/SteamBuild";
-            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+            // Create the asset wherever the user currently has a folder selected in the
+            // Project window; if nothing is selected, drop it at the project root (Assets).
+            // The user can freely move it afterwards — FindAssets locates it by type, not path.
+            string folder = GetSelectedFolderOrAssetsRoot();
+            string assetPath = AssetDatabase.GenerateUniqueAssetPath(folder + "/SteamBuildConfig.asset");
 
             var asset = CreateInstance<SteamBuildConfig>();
-            AssetDatabase.CreateAsset(asset, folder + "/SteamBuildConfig.asset");
+            AssetDatabase.CreateAsset(asset, assetPath);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             return asset;
+        }
+
+        /// <summary>
+        /// Returns the folder currently clicked/selected in the Project window.
+        /// If a file is selected, returns its containing folder; if a folder is selected,
+        /// returns it; if nothing is selected, returns "Assets". The result is always an
+        /// existing folder, so no folder creation is needed.
+        /// </summary>
+        private static string GetSelectedFolderOrAssetsRoot()
+        {
+            foreach (var obj in Selection.GetFiltered<UnityEngine.Object>(SelectionMode.Assets))
+            {
+                string path = AssetDatabase.GetAssetPath(obj);
+                if (string.IsNullOrEmpty(path)) continue;
+
+                if (AssetDatabase.IsValidFolder(path))
+                    return path;                                  // a folder is selected
+
+                string dir = Path.GetDirectoryName(path);         // a file is selected → its folder
+                if (!string.IsNullOrEmpty(dir))
+                    return dir.Replace('\\', '/');
+            }
+
+            return "Assets";                                      // nothing selected → project root
         }
 
         public EnvironmentSettings GetEnvironment(string envName)

@@ -51,7 +51,7 @@ Add to `Packages/manifest.json`:
 
 ## Setup
 
-1. Open **Tools ▸ Steam Build ▸ Build Pipeline**. On first open a `SteamBuildConfig` asset is created at `Assets/Editor/SteamBuild/SteamBuildConfig.asset`.
+1. (Optional) In the Project window, select the folder where you want the config to live. Then open **Tools ▸ Steam Build ▸ Build Pipeline** — on first open a `SteamBuildConfig` asset is created in the selected folder (or under `Assets/` if nothing is selected). You can move it anywhere afterwards; it is located by type, not path.
 2. Select the asset and fill in:
    - **steamCmdPath** — absolute path to your `steamcmd.exe`.
    - **steamUsername** — your Steam partner upload account.
@@ -75,7 +75,7 @@ Build output lands in `Builds/<env>/<version>/`; generated VDF scripts and steam
 ## Security notes
 
 - The password is held **in memory for the current Unity session only** — it is never written to disk. The recommended flow leaves it blank and relies on the cached Steam Guard token.
-- If you set `steamUsername` (or any credential) inside `SteamBuildConfig`, **do not commit that asset to a public repo.** Add `Assets/Editor/SteamBuild/SteamBuildConfig.asset` to your project's `.gitignore` if it carries account info.
+- If you set `steamUsername` (or any credential) inside `SteamBuildConfig`, **do not commit that asset to a public repo.** Add your `SteamBuildConfig.asset` to your project's `.gitignore` if it carries account info.
 
 ## License
 
