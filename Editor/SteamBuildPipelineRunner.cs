@@ -37,6 +37,10 @@ namespace WazangGames.SteamBuildPipeline
             // public installs — it is slower and exposes debug surfaces.
             public bool developmentBuild;
 
+            // One-off define symbols for this build, on top of the environment's own list.
+            // Free-form: separate with ';' ',' or whitespace.
+            public string additionalScriptingDefines;
+
             // Credentials supplied by the window. Username is mandatory when uploading;
             // password is optional — leave empty to reuse the cached Steam Guard token
             // produced by running 'steamcmd +login user pass' once interactively.
@@ -72,8 +76,21 @@ namespace WazangGames.SteamBuildPipeline
                 AssetDatabase.SaveAssets();
 
                 // Step 2: Unity build.
+                //
+                // Defines go through extraScriptingDefines rather than
+                // PlayerSettings.SetScriptingDefineSymbols* on purpose: the latter is global,
+                // triggers a domain reload mid-run, and leaves the project in the build's
+                // define state if anything throws afterwards. extraScriptingDefines applies
+                // to this build only and reverts itself.
+                var defines = ResolveScriptingDefines(
+                    req.environment, req.additionalScriptingDefines, out var rejectedDefines);
+                foreach (var bad in rejectedDefines)
+                    Debug.LogWarning($"[SteamBuild] Ignoring invalid define symbol '{bad}' — " +
+                                     "must start with a letter or '_' and contain only letters, digits and '_'.");
+
                 Debug.Log($"[SteamBuild] Building '{req.environment.name}' v{req.version} " +
-                          $"({(req.developmentBuild ? "development" : "release")}) → {buildDir}");
+                          $"({(req.developmentBuild ? "development" : "release")}) → {buildDir}" +
+                          (defines.Length > 0 ? $"\n[SteamBuild] Defines: {string.Join(";", defines)}" : ""));
                 string exePath = Path.Combine(buildDir, $"{PlayerSettings.productName}.exe");
                 var buildOpts = new BuildPlayerOptions
                 {
@@ -81,7 +98,8 @@ namespace WazangGames.SteamBuildPipeline
                     locationPathName = exePath,
                     target = BuildTarget.StandaloneWindows64,
                     targetGroup = BuildTargetGroup.Standalone,
-                    options = req.developmentBuild ? BuildOptions.Development : BuildOptions.None
+                    options = req.developmentBuild ? BuildOptions.Development : BuildOptions.None,
+                    extraScriptingDefines = defines.Length > 0 ? defines : null
                 };
                 var report = BuildPipeline.BuildPlayer(buildOpts);
                 if (report.summary.result != BuildResult.Succeeded)
@@ -203,6 +221,56 @@ namespace WazangGames.SteamBuildPipeline
                 UseShellExecute = true,
                 WorkingDirectory = workDir
             });
+        }
+
+        private static readonly char[] DefineSeparators = { ';', ',', ' ', '\t', '\n', '\r' };
+
+        /// <summary>
+        /// Merges the environment's define symbols with any one-off ones typed for this build,
+        /// de-duplicated and order-preserving (environment first). Tokens that a C# compiler
+        /// would not accept are dropped into <paramref name="rejected"/> instead of silently
+        /// poisoning the build. Pure and side-effect free — the window calls it every OnGUI
+        /// to render the effective list.
+        /// </summary>
+        public static string[] ResolveScriptingDefines(
+            EnvironmentSettings environment,
+            string additionalDefines,
+            out string[] rejected)
+        {
+            var accepted = new System.Collections.Generic.List<string>();
+            var bad = new System.Collections.Generic.List<string>();
+
+            void Consume(string raw)
+            {
+                if (string.IsNullOrWhiteSpace(raw)) return;
+                foreach (var token in raw.Split(DefineSeparators, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (!IsValidDefine(token))
+                    {
+                        if (!bad.Contains(token)) bad.Add(token);
+                    }
+                    else if (!accepted.Contains(token))
+                    {
+                        accepted.Add(token);
+                    }
+                }
+            }
+
+            if (environment?.scriptingDefines != null)
+                foreach (var d in environment.scriptingDefines) Consume(d);
+            Consume(additionalDefines);
+
+            rejected = bad.ToArray();
+            return accepted.ToArray();
+        }
+
+        private static bool IsValidDefine(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return false;
+            if (!char.IsLetter(s[0]) && s[0] != '_') return false;
+            foreach (var c in s)
+                if (!char.IsLetterOrDigit(c) && c != '_') return false;
+            return true;
         }
 
         private static string[] GetEnabledScenes()

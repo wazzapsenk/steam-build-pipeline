@@ -142,6 +142,11 @@ namespace WazangGames.SteamBuildPipeline
                  "so nobody accidentally pushes to 'default' instead of 'beta'.")]
         public List<string> allowedBranches = new() { "default" };
 
+        [Tooltip("Scripting define symbols compiled into THIS environment's builds, e.g. " +
+                 "DEMO_BUILD. Passed to the build only — Player Settings are left untouched, " +
+                 "so there is no domain reload and nothing stale left behind afterwards.")]
+        public List<string> scriptingDefines = new();
+
         [TextArea(2, 4)]
         [Tooltip("Optional reminder shown in the build window when this environment is selected.")]
         public string notes;

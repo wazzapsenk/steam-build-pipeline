@@ -34,7 +34,7 @@ It builds a **Standalone Windows64** player, generates the Steamworks `app_build
 To pin a specific version, append a tag:
 
 ```
-https://github.com/wazzapsenk/steam-build-pipeline.git#v1.0.0
+https://github.com/wazzapsenk/steam-build-pipeline.git#v1.1.0
 ```
 
 ### Or via `manifest.json`
@@ -44,7 +44,7 @@ Add to `Packages/manifest.json`:
 ```json
 {
   "dependencies": {
-    "com.wazanggames.steam-build-pipeline": "https://github.com/wazzapsenk/steam-build-pipeline.git#v1.0.0"
+    "com.wazanggames.steam-build-pipeline": "https://github.com/wazzapsenk/steam-build-pipeline.git#v1.1.0"
   }
 }
 ```
@@ -78,6 +78,17 @@ In **Tools ▸ Steam Build ▸ Build Pipeline**:
    - Check *Development build* for a player with the profiler and dev console enabled
      (`BuildOptions.Development`). Useful for Playtest/QA drops; leave it off for public
      releases. The window warns if a dev build is about to be uploaded for real.
+
+### Scripting defines
+
+Each environment carries its own define symbols (`DEMO_BUILD`, `PLAYTEST`, …), stored in
+`SteamBuildConfig` and editable straight from the build window. A second field takes one-off
+symbols for the next build only.
+
+Both are passed via `BuildPlayerOptions.extraScriptingDefines`, so they apply to that build
+and nothing else — your Player Settings defines are never rewritten, there is no domain
+reload mid-build, and a failed build can't leave the project stuck in `DEMO_BUILD`.
+Defines from Player Settings still apply on top.
 
 Build output lands in `Builds/<env>/<version>/`; generated VDF scripts and steamcmd logs go to `Tools/Steam/`.
 

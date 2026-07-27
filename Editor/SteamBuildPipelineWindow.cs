@@ -23,6 +23,7 @@ namespace WazangGames.SteamBuildPipeline
         private bool _uploadToSteam = true;
         private bool _previewOnly;
         private bool _developmentBuild;
+        private string _extraDefines = "";
         private Vector2 _scroll;
 
         // Username persists across Unity sessions (EditorPrefs); password is session-only
@@ -37,6 +38,7 @@ namespace WazangGames.SteamBuildPipeline
         private const string PrefBranch = "WazangGames.SteamBuildPipeline.BranchIndex";
         private const string PrefSteamUser = "WazangGames.SteamBuildPipeline.SteamUsername";
         private const string PrefDevBuild = "WazangGames.SteamBuildPipeline.DevelopmentBuild";
+        private const string PrefExtraDefines = "WazangGames.SteamBuildPipeline.ExtraDefines";
 
         [MenuItem("Tools/Steam Build/Build Pipeline", priority = 2000)]
         public static void Open()
@@ -58,6 +60,7 @@ namespace WazangGames.SteamBuildPipeline
             _steamUsername = EditorPrefs.GetString(PrefSteamUser, _config.steamUsername ?? "");
             // Defaults to OFF: a release build is the safe assumption if nobody chose.
             _developmentBuild = EditorPrefs.GetBool(PrefDevBuild, false);
+            _extraDefines = EditorPrefs.GetString(PrefExtraDefines, "");
         }
 
         private void OnDisable()
@@ -68,6 +71,7 @@ namespace WazangGames.SteamBuildPipeline
             EditorPrefs.SetInt(PrefBranch, _branchIndex);
             EditorPrefs.SetString(PrefSteamUser, _steamUsername ?? "");
             EditorPrefs.SetBool(PrefDevBuild, _developmentBuild);
+            EditorPrefs.SetString(PrefExtraDefines, _extraDefines ?? "");
             // _steamPassword intentionally not persisted.
         }
 
@@ -89,6 +93,8 @@ namespace WazangGames.SteamBuildPipeline
             DrawCredentialsSection();
             EditorGUILayout.Space();
             DrawEnvironmentSection();
+            EditorGUILayout.Space();
+            DrawDefinesSection();
             EditorGUILayout.Space();
             DrawVersionSection();
             EditorGUILayout.Space();
@@ -204,6 +210,65 @@ namespace WazangGames.SteamBuildPipeline
                 EditorGUILayout.HelpBox(env.notes, MessageType.Info);
         }
 
+        /// <summary>
+        /// Two levels of defines: the environment's own list (persisted in the config asset,
+        /// so Demo always builds with DEMO_BUILD) and a scratch field for one-off symbols.
+        /// Both are handed to the build via BuildPlayerOptions.extraScriptingDefines — the
+        /// project's Player Settings are never modified.
+        /// </summary>
+        private void DrawDefinesSection()
+        {
+            EditorGUILayout.LabelField("Scripting Defines", EditorStyles.boldLabel);
+            if (_config.environments.Count == 0) return;
+
+            var env = _config.environments[_envIndex];
+
+            using (new EditorGUI.IndentLevelScope())
+            {
+                string current = string.Join(";", env.scriptingDefines ?? new System.Collections.Generic.List<string>());
+                string edited = EditorGUILayout.DelayedTextField(
+                    new GUIContent($"{env.name} defines",
+                        "Saved into SteamBuildConfig — every build of this environment gets them. " +
+                        "Separate with ';'."),
+                    current);
+
+                if (edited != current)
+                {
+                    Undo.RecordObject(_config, "Edit Environment Defines");
+                    env.scriptingDefines = new System.Collections.Generic.List<string>(
+                        (edited ?? "").Split(new[] { ';', ',', ' ', '\t' },
+                            System.StringSplitOptions.RemoveEmptyEntries));
+                    EditorUtility.SetDirty(_config);
+                    AssetDatabase.SaveAssets();
+                }
+
+                _extraDefines = EditorGUILayout.TextField(
+                    new GUIContent("Extra (this build)",
+                        "Ad-hoc symbols for the next build only. Remembered on this machine, " +
+                        "not saved into the config asset."),
+                    _extraDefines ?? "");
+
+                var effective = SteamBuildPipelineRunner.ResolveScriptingDefines(
+                    env, _extraDefines, out var rejected);
+
+                EditorGUILayout.LabelField("Effective",
+                    effective.Length > 0 ? string.Join(";", effective) : "(none)");
+
+                if (rejected.Length > 0)
+                {
+                    EditorGUILayout.HelpBox(
+                        "Ignored — not valid define symbols: " + string.Join(", ", rejected) + "\n" +
+                        "A symbol must start with a letter or '_' and contain only letters, digits and '_'.",
+                        MessageType.Warning);
+                }
+
+                EditorGUILayout.HelpBox(
+                    "Applied to this build only (BuildPlayerOptions.extraScriptingDefines). " +
+                    "Your Player Settings defines stay untouched and are still compiled in.",
+                    MessageType.None);
+            }
+        }
+
         private void DrawVersionSection()
         {
             EditorGUILayout.LabelField("Build Info", EditorStyles.boldLabel);
@@ -262,10 +327,12 @@ namespace WazangGames.SteamBuildPipeline
         {
             var env = _config.environments[_envIndex];
             string branch = env.allowedBranches[_branchIndex];
+            var defines = SteamBuildPipelineRunner.ResolveScriptingDefines(env, _extraDefines, out _);
             string msg = $"Environment: {env.name} (AppId {env.appId})\n" +
                          $"Version: {_version}\n" +
                          $"Branch: {branch}\n" +
                          $"Build type: {(_developmentBuild ? "DEVELOPMENT" : "Release")}\n" +
+                         $"Defines: {(defines.Length > 0 ? string.Join(";", defines) : "(none)")}\n" +
                          $"Upload: {(_uploadToSteam ? (_previewOnly ? "preview" : "yes") : "no")}\n\n" +
                          "Proceed?";
             return EditorUtility.DisplayDialog("Steam Build Pipeline", msg, "Build", "Cancel");
@@ -284,6 +351,7 @@ namespace WazangGames.SteamBuildPipeline
                 uploadToSteam = _uploadToSteam,
                 previewOnly = _previewOnly,
                 developmentBuild = _developmentBuild,
+                additionalScriptingDefines = _extraDefines ?? "",
                 steamUsername = (_steamUsername ?? "").Trim(),
                 steamPassword = _steamPassword ?? ""
             };
