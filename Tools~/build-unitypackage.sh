@@ -13,8 +13,13 @@
 # the UPM git-package install (which lives read-only under Packages/).
 #
 # Re-run this whenever you change the Editor/ sources or bump the version.
+#
+# This script lives in Tools~/ rather than the repo root on purpose: Unity ignores any
+# folder whose name ends in '~', so when the repo is consumed as a UPM git package the
+# script never reaches the asset database. A file with no .meta inside Packages/ (an
+# immutable folder Unity cannot write metas into) logs a warning on every import.
 set -euo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 DEST="Assets/Plugins/WazangGames/SteamBuildPipeline"
 OUT="SteamBuildPipeline.unitypackage"

@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BuildPlayerOptions.extraScriptingDefines` — Player Settings are left untouched. Invalid
   symbols are rejected with a warning instead of reaching the compiler.
 
+### Fixed
+- Moved `build-unitypackage.sh` to `Tools~/`. At the repo root it had no `.meta`, and Unity
+  cannot generate one inside `Packages/` (an immutable folder), so every import of the UPM
+  package logged *"has no meta file, but it's in an immutable folder"*. Folders ending in
+  `~` are excluded from the asset database entirely.
+
 ## [1.0.0] - 2026-06-28
 
 ### Added
