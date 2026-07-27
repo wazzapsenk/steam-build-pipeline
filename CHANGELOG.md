@@ -4,6 +4,14 @@ All notable changes to this package are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-07-27
+
+### Fixed
+- Moved `build-unitypackage.sh` to `Tools~/`. At the repo root it had no `.meta`, and Unity
+  cannot generate one inside `Packages/` (an immutable folder), so every import of the UPM
+  package logged *"has no meta file, but it's in an immutable folder"*. Folders ending in
+  `~` are excluded from the asset database entirely.
+
 ## [1.1.0] - 2026-07-27
 
 ### Added
@@ -14,12 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "extra defines for this build" field, both editable from the build window. Applied through
   `BuildPlayerOptions.extraScriptingDefines` — Player Settings are left untouched. Invalid
   symbols are rejected with a warning instead of reaching the compiler.
-
-### Fixed
-- Moved `build-unitypackage.sh` to `Tools~/`. At the repo root it had no `.meta`, and Unity
-  cannot generate one inside `Packages/` (an immutable folder), so every import of the UPM
-  package logged *"has no meta file, but it's in an immutable folder"*. Folders ending in
-  `~` are excluded from the asset database entirely.
 
 ## [1.0.0] - 2026-06-28
 
