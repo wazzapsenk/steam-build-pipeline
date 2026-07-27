@@ -32,6 +32,11 @@ namespace WazangGames.SteamBuildPipeline
             public bool previewOnly;       // steamcmd preview mode: validates but does not upload
             public bool uploadToSteam;     // false = build only, skip steamcmd
 
+            // Development build: enables the profiler/dev console and stamps the player as
+            // non-release. Handy for Playtest/QA drops, but keep it OFF for anything the
+            // public installs — it is slower and exposes debug surfaces.
+            public bool developmentBuild;
+
             // Credentials supplied by the window. Username is mandatory when uploading;
             // password is optional — leave empty to reuse the cached Steam Guard token
             // produced by running 'steamcmd +login user pass' once interactively.
@@ -67,7 +72,8 @@ namespace WazangGames.SteamBuildPipeline
                 AssetDatabase.SaveAssets();
 
                 // Step 2: Unity build.
-                Debug.Log($"[SteamBuild] Building '{req.environment.name}' v{req.version} → {buildDir}");
+                Debug.Log($"[SteamBuild] Building '{req.environment.name}' v{req.version} " +
+                          $"({(req.developmentBuild ? "development" : "release")}) → {buildDir}");
                 string exePath = Path.Combine(buildDir, $"{PlayerSettings.productName}.exe");
                 var buildOpts = new BuildPlayerOptions
                 {
@@ -75,7 +81,7 @@ namespace WazangGames.SteamBuildPipeline
                     locationPathName = exePath,
                     target = BuildTarget.StandaloneWindows64,
                     targetGroup = BuildTargetGroup.Standalone,
-                    options = BuildOptions.None
+                    options = req.developmentBuild ? BuildOptions.Development : BuildOptions.None
                 };
                 var report = BuildPipeline.BuildPlayer(buildOpts);
                 if (report.summary.result != BuildResult.Succeeded)

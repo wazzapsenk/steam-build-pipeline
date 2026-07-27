@@ -22,6 +22,7 @@ namespace WazangGames.SteamBuildPipeline
         private string _description = "";
         private bool _uploadToSteam = true;
         private bool _previewOnly;
+        private bool _developmentBuild;
         private Vector2 _scroll;
 
         // Username persists across Unity sessions (EditorPrefs); password is session-only
@@ -35,6 +36,7 @@ namespace WazangGames.SteamBuildPipeline
         private const string PrefEnv = "WazangGames.SteamBuildPipeline.EnvIndex";
         private const string PrefBranch = "WazangGames.SteamBuildPipeline.BranchIndex";
         private const string PrefSteamUser = "WazangGames.SteamBuildPipeline.SteamUsername";
+        private const string PrefDevBuild = "WazangGames.SteamBuildPipeline.DevelopmentBuild";
 
         [MenuItem("Tools/Steam Build/Build Pipeline", priority = 2000)]
         public static void Open()
@@ -54,6 +56,8 @@ namespace WazangGames.SteamBuildPipeline
             // Seed username from EditorPrefs first, then fall back to the asset (for new
             // machines where the prefs key doesn't exist yet).
             _steamUsername = EditorPrefs.GetString(PrefSteamUser, _config.steamUsername ?? "");
+            // Defaults to OFF: a release build is the safe assumption if nobody chose.
+            _developmentBuild = EditorPrefs.GetBool(PrefDevBuild, false);
         }
 
         private void OnDisable()
@@ -63,6 +67,7 @@ namespace WazangGames.SteamBuildPipeline
             EditorPrefs.SetInt(PrefEnv, _envIndex);
             EditorPrefs.SetInt(PrefBranch, _branchIndex);
             EditorPrefs.SetString(PrefSteamUser, _steamUsername ?? "");
+            EditorPrefs.SetBool(PrefDevBuild, _developmentBuild);
             // _steamPassword intentionally not persisted.
         }
 
@@ -212,6 +217,22 @@ namespace WazangGames.SteamBuildPipeline
         private void DrawActionSection()
         {
             EditorGUILayout.LabelField("Action", EditorStyles.boldLabel);
+
+            _developmentBuild = EditorGUILayout.ToggleLeft(
+                "Development build (profiler + dev console; leave OFF for public releases)",
+                _developmentBuild);
+
+            // Shipping a development player to a live branch is almost always a mistake:
+            // slower, and it exposes the debug console to players. Warn loudly, don't block —
+            // a dev build on a Playtest/beta branch is a legitimate workflow.
+            if (_developmentBuild && _uploadToSteam && !_previewOnly)
+            {
+                EditorGUILayout.HelpBox(
+                    "This uploads a DEVELOPMENT build to Steam. Fine for Playtest/QA branches, " +
+                    "but never ship one to players.",
+                    MessageType.Warning);
+            }
+
             _uploadToSteam = EditorGUILayout.ToggleLeft(
                 "Upload to Steam after build (uncheck for local-only build)", _uploadToSteam);
 
@@ -226,6 +247,7 @@ namespace WazangGames.SteamBuildPipeline
             string buttonLabel = _uploadToSteam
                 ? (_previewOnly ? "Build + Preview Upload" : "Build + Upload to Steam")
                 : "Build (local only)";
+            if (_developmentBuild) buttonLabel += "  [DEV]";
 
             GUI.backgroundColor = _uploadToSteam && !_previewOnly ? new Color(0.85f, 0.55f, 0.55f) : Color.white;
             if (GUILayout.Button(buttonLabel, GUILayout.Height(40)))
@@ -243,6 +265,7 @@ namespace WazangGames.SteamBuildPipeline
             string msg = $"Environment: {env.name} (AppId {env.appId})\n" +
                          $"Version: {_version}\n" +
                          $"Branch: {branch}\n" +
+                         $"Build type: {(_developmentBuild ? "DEVELOPMENT" : "Release")}\n" +
                          $"Upload: {(_uploadToSteam ? (_previewOnly ? "preview" : "yes") : "no")}\n\n" +
                          "Proceed?";
             return EditorUtility.DisplayDialog("Steam Build Pipeline", msg, "Build", "Cancel");
@@ -260,6 +283,7 @@ namespace WazangGames.SteamBuildPipeline
                 branch = env.allowedBranches[_branchIndex],
                 uploadToSteam = _uploadToSteam,
                 previewOnly = _previewOnly,
+                developmentBuild = _developmentBuild,
                 steamUsername = (_steamUsername ?? "").Trim(),
                 steamPassword = _steamPassword ?? ""
             };

@@ -6,6 +6,9 @@
 *.sln
 *.user
 
+# Build artifact — attach to GitHub Releases, don't commit (regenerate via build-unitypackage.sh)
+*.unitypackage
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db

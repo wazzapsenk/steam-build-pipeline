@@ -49,6 +49,12 @@ Add to `Packages/manifest.json`:
 }
 ```
 
+> With the UPM install the files live **read-only** under `Packages/com.wazanggames.steam-build-pipeline/`. This keeps your `Assets/` clean and lets you update via git — but you can't move or edit the package files in place. If you want the sources copied into your project instead, use the `.unitypackage` below.
+
+### Or import the `.unitypackage`
+
+Grab `SteamBuildPipeline.unitypackage` from the [Releases](https://github.com/wazzapsenk/steam-build-pipeline/releases) page and double-click it (or **Assets ▸ Import Package ▸ Custom Package…**). The files land under `Assets/Plugins/WazangGames/SteamBuildPipeline/` and behave like normal project assets — move or edit them freely. Updates are manual: re-import a newer `.unitypackage`.
+
 ## Setup
 
 1. (Optional) In the Project window, select the folder where you want the config to live. Then open **Tools ▸ Steam Build ▸ Build Pipeline** — on first open a `SteamBuildConfig` asset is created in the selected folder (or under `Assets/` if nothing is selected). You can move it anywhere afterwards; it is located by type, not path.
@@ -69,6 +75,9 @@ In **Tools ▸ Steam Build ▸ Build Pipeline**:
 4. Click **Build + Upload to Steam**.
    - Uncheck *Upload* for a local-only build.
    - Check *Preview only* to validate via `steamcmd` without actually shipping.
+   - Check *Development build* for a player with the profiler and dev console enabled
+     (`BuildOptions.Development`). Useful for Playtest/QA drops; leave it off for public
+     releases. The window warns if a dev build is about to be uploaded for real.
 
 Build output lands in `Builds/<env>/<version>/`; generated VDF scripts and steamcmd logs go to `Tools/Steam/`.
 
