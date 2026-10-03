@@ -53,7 +53,7 @@ Add to `Packages/manifest.json`:
 
 ### Or import the `.unitypackage`
 
-Grab `SteamBuildPipeline.unitypackage` from the [Releases](https://github.com/wazzapsenk/steam-build-pipeline/releases) page and double-click it (or **Assets ▸ Import Package ▸ Custom Package…**). The files land under `Assets/Plugins/WazangGames/SteamBuildPipeline/` and behave like normal project assets — move or edit them freely. Updates are manual: re-import a newer `.unitypackage`.
+[Download `SteamBuildPipeline.unitypackage`](https://github.com/wazzapsenk/steam-build-pipeline/releases/latest/download/SteamBuildPipeline.unitypackage) (latest release; older versions are on the [Releases](https://github.com/wazzapsenk/steam-build-pipeline/releases) page) and double-click it (or **Assets ▸ Import Package ▸ Custom Package…**). The files land under `Assets/Plugins/WazangGames/SteamBuildPipeline/` and behave like normal project assets — move or edit them freely. Updates are manual: re-import a newer `.unitypackage`.
 
 ## Setup
 
