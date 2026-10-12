@@ -314,11 +314,18 @@ namespace WazangGames.SteamBuildPipeline
                 : "Build (local only)";
             if (_developmentBuild) buttonLabel += "  [DEV]";
 
+            // Confirm/Execute index into environments and allowedBranches — nothing to build without both.
+            bool canBuild = _config.environments.Count > 0 &&
+                            _config.environments[_envIndex].allowedBranches.Count > 0;
+
             GUI.backgroundColor = _uploadToSteam && !_previewOnly ? new Color(0.85f, 0.55f, 0.55f) : Color.white;
-            if (GUILayout.Button(buttonLabel, GUILayout.Height(40)))
+            using (new EditorGUI.DisabledScope(!canBuild))
             {
-                if (Confirm())
-                    Execute();
+                if (GUILayout.Button(buttonLabel, GUILayout.Height(40)))
+                {
+                    if (Confirm())
+                        Execute();
+                }
             }
             GUI.backgroundColor = Color.white;
         }
