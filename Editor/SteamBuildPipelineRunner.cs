@@ -67,8 +67,16 @@ namespace WazangGames.SteamBuildPipeline
                 string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
                 string envSlug = Sanitize(req.environment.name);
                 string versionSlug = Sanitize(req.version);
+                // "." / ".." would resolve buildDir to a parent folder, which the clean below would wipe.
+                if (envSlug.Trim('.').Length == 0 || versionSlug.Trim('.').Length == 0)
+                    throw new InvalidOperationException(
+                        $"Environment name '{req.environment.name}' and version '{req.version}' must not be empty or dots only.");
 
                 string buildDir = Path.Combine(projectRoot, req.config.buildOutputRoot, envSlug, versionSlug);
+                // Start clean: everything in this folder is uploaded ("*" recursive), so leftovers from
+                // an earlier build of the same version (old exe name, removed plugins) would ship too.
+                if (Directory.Exists(buildDir))
+                    Directory.Delete(buildDir, true);
                 Directory.CreateDirectory(buildDir);
 
                 // Step 1: version bump (always — even if upload is off, the exe should carry the right version).
@@ -326,9 +334,12 @@ namespace WazangGames.SteamBuildPipeline
             sb.AppendLine("\t}");
             // Unity ships a BurstDebugInformation folder marked "DoNotShip" — strip it.
             // Also skip pdb files (debug symbols) and IL2CPP intermediates.
+            // steam_appid.txt is a local-dev helper (SteamAppIdBuildPostProcessor) — Valve says
+            // never ship it; it also carries a single AppId, wrong for Demo/Playtest apps.
             sb.AppendLine("\t\"FileExclusion\" \"*_BurstDebugInformation_DoNotShip*\"");
             sb.AppendLine("\t\"FileExclusion\" \"*_BackUpThisFolder_ButDontShipItWithYourGame*\"");
             sb.AppendLine("\t\"FileExclusion\" \"*.pdb\"");
+            sb.AppendLine("\t\"FileExclusion\" \"steam_appid.txt\"");
             sb.AppendLine("}");
             return sb.ToString();
         }
@@ -339,7 +350,9 @@ namespace WazangGames.SteamBuildPipeline
             string loginArg = string.IsNullOrEmpty(password)
                 ? $"+login \"{username}\""
                 : $"+login \"{username}\" \"{password}\"";
-            string args = $"{loginArg} +run_app_build \"{runAppPath}\" +quit";
+            // NoPromptForPassword: if the cached Steam Guard token expired, fail with an exit code
+            // instead of waiting for input on a stdin nobody can type into (would hang the Editor).
+            string args = $"+@NoPromptForPassword 1 {loginArg} +run_app_build \"{runAppPath}\" +quit";
 
             // Loggable variant: never echo the password into the Unity console.
             string sanitizedArgs = string.IsNullOrEmpty(password)
